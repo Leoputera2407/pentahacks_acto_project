@@ -24,7 +24,8 @@ class VideoRecorder extends React.Component {
             recordVideo: null,
             src: null,
             uploadSuccess: null,
-            uploading: false
+            uploading: false,
+            isRecording:false
         };
 
     }
@@ -46,6 +47,9 @@ class VideoRecorder extends React.Component {
     }
 
     startRecord = ()=> {
+        this.setState({
+            isRecording:true
+        });
         captureUserMedia((stream) => {
             this.setState({
                 recordVideo: RecordRTC(stream, { type: 'video' }),
@@ -58,47 +62,54 @@ class VideoRecorder extends React.Component {
         let timeout =setTimeout(() => {
             this.stopRecord();
             clearTimeout(timeout);
-        }, 4000);
+        }, 40000);
     }
 
-    //TODO: Put play and stop buttons.
-    stopRecord() {
+    uploadVideo = ()=>{
+        this.setState({ uploading: true });
+        const file = new File([this.state.recordVideo.blob], "new-upfile.webm", {type: 'video/webm'});
+        const formData = new FormData();
+
+        formData.append('upfile', file, 'new-upfile.webm');
+        const fetchParams = {
+            method: 'POST',
+            mode: 'no-cors',
+            body: formData
+
+        }
+        fetch(this.props.uploadURL,
+            fetchParams).then((response)=>{
+            console.log(response);
+            this.setState({
+                uploadSuccess:true,
+                uploading:false
+            })
+        })
+    }
+
+    stopRecord=()=> {
         this.state.recordVideo.stopRecording(() => {
-            const file = new File([this.state.recordVideo.blob], "new-upfile.webm", {type: 'video/webm'});
-            const formData = new FormData();
-            //formData.append('upfile', this.state.recordVideo.blob);
-            formData.append('upfile', file,'new-upfile.webm' );
-            ///*
-            const fetchParams = {
-                method: 'POST',
-                //headers: {
-                 //   "Content-Type": "video/webm"
-                //},
-                // body: `upfile=${this.state.recordVideo.blob}`
-                body: formData
-            }
-
-            //*/
-
-            this.setState({ uploading: true });
-            // TODO UPLOAD HERE.
-           fetch(this.props.uploadURL,
-               fetchParams).then((response)=>{
-              console.log(response);
-           })
-
-
+            this.setState({
+                isRecording: false
+            });
         });
     }
 
     render() {
         return(
             <div>
-                <Modal show={this.state.uploadSuccess}><Modal.Body>Upload success!</Modal.Body></Modal>
                 <div><Webcam src={this.state.src}/></div>
                 {this.state.uploading ?
                     <div>Uploading...</div> : null}
-                <div><button onClick={this.startRecord}>Start Record</button></div>
+                {this.state.uploadSuccess?
+                    <div> Upload Success! </div>:null}
+
+                <div><button onClick={this.state.isRecording? this.stopRecord: this.startRecord}>{this.state.isRecording? "Stop":"Start"} Recording</button></div>
+                {!this.state.isRecording && this.state.recordVideo?
+                <button onClick={this.uploadVideo}>
+                    Submit video
+                </button>
+                        :null}
             </div>
         )
     }
