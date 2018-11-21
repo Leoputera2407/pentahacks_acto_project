@@ -2,3 +2,5 @@ node_modules
 package-lock.json
 videoplayback.mp4
 uploads
+Pentahacks.json
+settings.env
