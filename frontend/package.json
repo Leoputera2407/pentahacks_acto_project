@@ -4,8 +4,10 @@
   "private": true,
   "dependencies": {
     "react": "^16.6.3",
+    "react-bootstrap": "^0.32.4",
     "react-dom": "^16.6.3",
-    "react-scripts": "2.1.1"
+    "react-scripts": "2.1.1",
+    "recordrtc": "^5.4.8"
   },
   "scripts": {
     "start": "REACT_APP_API_URL=http://localhost:7200 react-scripts start",
