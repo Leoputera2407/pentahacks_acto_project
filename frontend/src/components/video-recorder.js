@@ -1,6 +1,5 @@
 import React from 'react';
 import RecordRTC from 'recordrtc';
-import { Modal } from 'react-bootstrap';
 
 const captureUserMedia = (callback) =>{
     var params = { audio: true, video: true };
@@ -71,12 +70,9 @@ class VideoRecorder extends React.Component {
         const formData = new FormData();
 
         formData.append('upfile', file, 'new-upfile.webm');
-        const fetchParams = {
-            method: 'POST',
-            mode: 'no-cors',
-            body: formData
 
-        }
+        this.props.onSubmitForm(formData)
+        /*
         fetch(this.props.uploadURL,
             fetchParams).then((response)=>{
             console.log(response);
@@ -85,6 +81,7 @@ class VideoRecorder extends React.Component {
                 uploading:false
             })
         })
+        */
     }
 
     stopRecord=()=> {
