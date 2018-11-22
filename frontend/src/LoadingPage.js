@@ -6,6 +6,14 @@ import io from 'socket.io-client';
 
 import React, {Component} from 'react';
 
+const WSEVENTS = {
+    "KAIROS_VIDEO_EMOTION_FINISH": "KAIROS_VIDEO_EMOTION_FINISH",
+    "GCP_TTS_FINISH": "GCP_TTS_FINISH",
+    "VOKO_AUDIO_EMOTION_FINISH": "VOKO_AUDIO_EMOTION_FINISH",
+    "SCORE_AGGREGATION_FINISH": "SCORE_AGGREGATION_FINISH",
+    "RESULTS": "RESULTS"
+}
+
 class LandingPage extends Component {
     socket = null;
     constructor(props){
@@ -19,6 +27,14 @@ class LandingPage extends Component {
         this.socket.on("LOADING_EVT",(data)=>{
             //TODO
             console.log("from server: ",data);
+        })
+        this.socket.on(WSEVENTS.KAIROS_VIDEO_EMOTION_FINISH,(data)=>{
+            //TODO
+            console.log("KAIROS FINISH from server: ",data);
+        })
+        this.socket.on(WSEVENTS.GCP_TTS_FINISH,(data)=>{
+            //TODO
+            console.log("TTS FINISH from server: ",data);
         })
     }
     render (){

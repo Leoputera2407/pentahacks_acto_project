@@ -6,25 +6,26 @@ if ((!process.env.KAIROS_APP_ID) || (!process.env.KAIROS_APP_KEY)){
 }
 
 /* Returns a json string (NOT json object.)*/
-const kairosAnalyzeVideoEmotion = async (absolute_videopath)=>{
-    const FILEPATH= absolute_videopath
-    const form = new FormData();
-    const blob = fs.createReadStream(FILEPATH);
-    form.append("source", blob);
-    fetch(`https://api.kairos.com/v2/media?landmark=1&timeout=30`, {
-        method: 'POST',
-        headers: {
-            "app_id": process.env.KAIROS_APP_ID,
-            "app_key": process.env.KAIROS_APP_KEY,
-        },
-        body: form
-    }).then((data)=>{
-        console.log("Got: ")
-        data.text().then((t)=>{
-            resolve(t);
+const kairosAnalyzeVideoEmotion = (absolute_videopath)=>{
+    return new Promise((resolve,reject)=>{
+        const FILEPATH= absolute_videopath
+        const form = new FormData();
+        const blob = fs.createReadStream(FILEPATH);
+        form.append("source", blob);
+        fetch(`https://api.kairos.com/v2/media?landmark=1&timeout=30`, {
+            method: 'POST',
+            headers: {
+                "app_id": process.env.KAIROS_APP_ID,
+                "app_key": process.env.KAIROS_APP_KEY,
+            },
+            body: form
+        }).then((data)=>{
+            data.text().then((t)=>{
+                resolve(t);
+            })
+        }).catch((e)=>{
+            reject(e);
         })
-    }).catch((e)=>{
-        reject(e);
-    })
+    });
 }
 module.exports = kairosAnalyzeVideoEmotion;

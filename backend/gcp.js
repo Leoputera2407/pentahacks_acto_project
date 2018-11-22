@@ -1,6 +1,7 @@
 const speech = require('@google-cloud/speech');
 const ffmpeg = require('fluent-ffmpeg');
 const path = require('path');
+const fs = require('fs');
 if (!process.env.GOOGLE_APPLICATION_CREDENTIALS){
     throw new Error("GOOGLE_APPLICATION_CREDENTIALS is not defined.");
 }

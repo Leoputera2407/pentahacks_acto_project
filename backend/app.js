@@ -6,8 +6,10 @@ const fs = require('fs');
 const cors = require('cors');
 const uuid = require('uuid');
 const workerpool = require('workerpool');
+const WSevents = require('./websocketEvents');
+const {emitEvent} = require('./socket');
 require("dotenv").config({ path: path.join(__dirname, "settings.env") });
-const {initSocketIoServer,socketClientMap} = require('./socket');
+const {initSocketIoServer,socketClientMap,map} = require('./socket');
 const FILE_UPLOAD_DIR= path.join(__dirname, "uploads");
 
 if (!fs.existsSync(FILE_UPLOAD_DIR)){
@@ -48,12 +50,23 @@ app.post('/upload/pitch',cors(), function(req, res){
       else {
         console.log("File Uploaded: ",name, "filename : ",uploadpath);
           socketClientMap.set(connectionID, null);
+          console.log("Appjs map : ",map);
           res.status(200).send(connectionID);
           //TODO : spawn workers here.
           Promise.all([
-              pool.exec("transcribe",[uploadpath,connectionID]),
-              pool.exec("analyzeVideoEmotion",[uploadpath,connectionID]),
-          ]).then(()=>{
+              (async ()=>{
+                  const data = await pool.exec("transcribe",[uploadpath]);
+                  emitEvent(connectionID, WSevents.GCP_TTS_FINISH)
+                  return(data);
+              })(),
+              (async ()=>{
+                  const data = await pool.exec("analyzeVideoEmotion",[uploadpath]);
+                  emitEvent(connectionID, WSevents.KAIROS_VIDEO_EMOTION_FINISH)
+                  return(data);
+              })(),
+          ]).then((data)=>{
+              console.log(data[0]);
+              console.log(data[1]);
 
           })
       }
