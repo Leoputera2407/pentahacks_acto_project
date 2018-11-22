@@ -1,9 +1,8 @@
 const fetch = require('node-fetch');
 const FormData = require('form-data');
 const fs = require('fs');
-if (!process.env.KAIROS_APP_ID || !process.env.KAIROS_API_KEY){
-    console.error("KAIROS_APP_ID or KAIROS_API_KEY is not defined.");
-    process.exit(1);
+if ((!process.env.KAIROS_APP_ID) || (!process.env.KAIROS_APP_KEY)){
+    throw new Error("KAIROS_APP_ID or KAIROS_APP_KEY is not defined.");
 }
 
 /* Returns a json string (NOT json object.)*/
