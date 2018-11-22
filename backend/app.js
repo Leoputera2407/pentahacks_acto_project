@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const cors = require('cors');
 const uuid = require('uuid');
+const ffmpeg = require('fluent-ffmpeg');
 const speech = require('@google-cloud/speech');
 require("dotenv").config({ path: path.join(__dirname, "settings.env") });
 
@@ -44,17 +45,27 @@ app.post('/upload/pitch',cors(), function(req, res){
   if(req.files.upfile){
     let file = req.files.upfile,
       name = file.name;
-    let uploadpath = path.join(FILE_UPLOAD_DIR, name);
+        let splittedname = file.name.split('.');
+        let extension = "";
+        if (splittedname.length > 1){
+            extension = "." + splittedname [splittedname.length - 1 ];
+        }
+
+      const connectionID = uuid();
+    let uploadpath = path.join(FILE_UPLOAD_DIR, connectionID + extension);
     file.mv(uploadpath,function(err){
       if(err){
         console.log("File Upload Failed",name,err);
         res.sendStatus(500);
       }
       else {
-        console.log("File Uploaded",name);
-          const connectionID = uuid();
+        console.log("File Uploaded: ",name, "filename : ",uploadpath);
           socketClientMap.set(connectionID, null);
           res.status(200).send(connectionID);
+          transcribe(uploadpath).then((transcription_str)=>{
+              //TODO: what to do with transcribe audio path here.
+              console.log("transcription_Str:", transcription_str);
+          })
       }
     });
   }
@@ -64,15 +75,37 @@ app.post('/upload/pitch',cors(), function(req, res){
   };
 })
 
-async function transcribe(file) {
+//resolves with filepath of audio file if successful.
+function convertVideoToAudio(absolute_video_filepath, samplerate){
+    return new Promise((resolve,reject)=>{
+        const audio_destination_path = path.join(
+            path.dirname(absolute_video_filepath),
+            `${path.basename(absolute_video_filepath).split('.')[0]}.flac`
+        );
+        console.log("Destination: ",audio_destination_path);
+        ffmpeg()
+            .noVideo()
+            .input(absolute_video_filepath)
+            .audioFrequency(samplerate)
+            .outputOptions("-ac 1")
+            .on("end",()=>{
+                resolve(audio_destination_path);
+            }).on('error',(e)=>{
+                reject(e);
+            }).save(audio_destination_path)
+
+    });
+}
+async function transcribe(absolute_video_filepath) {
   // Creates a client
   const client = new speech.SpeechClient();
 
   // The name of the audio file to transcribe
-  const fileName = `./uploads/${file}`;
+    const audio_filepath = await convertVideoToAudio(absolute_video_filepath, 20000)
+
 
   // Reads a local audio file and converts it to base64
-  const file = fs.readFileSync(fileName);
+  const file = fs.readFileSync(audio_filepath);
   const audioBytes = file.toString('base64');
 
   // The audio file's encoding, sample rate in hertz, and BCP-47 language code
@@ -80,8 +113,8 @@ async function transcribe(file) {
     content: audioBytes,
   };
   const config = {
-    encoding: 'LINEAR16',
-    sampleRateHertz: 16000,
+    encoding: 'FLAC',
+    sampleRateHertz: 20000,
     languageCode: 'en-US',
   };
   const request = {
@@ -94,6 +127,6 @@ async function transcribe(file) {
   const transcription = response.results
     .map(result => result.alternatives[0].transcript)
     .join('\n');
-  console.log(`Transcription: ${transcription}`);
+  return transcription;
 
 }
