@@ -1,37 +1,11 @@
 const speech = require('@google-cloud/speech');
-const ffmpeg = require('fluent-ffmpeg');
-const path = require('path');
 const fs = require('fs');
-if (!process.env.GOOGLE_APPLICATION_CREDENTIALS){
-    throw new Error("GOOGLE_APPLICATION_CREDENTIALS is not defined.");
+if (!process.env.GOOGLE_APPLICATION_CREDENTIALS || ! process.env.AUDIO_OUTPUT_FREQ){
+    throw new Error("GOOGLE_APPLICATION_CREDENTIALS or AUDIO_OUTPUT_FREQ is not defined.");
 }
-function convertVideoToAudio(absolute_video_filepath, samplerate){
-    return new Promise((resolve,reject)=>{
-        const audio_destination_path = path.join(
-            path.dirname(absolute_video_filepath),
-            `${path.basename(absolute_video_filepath).split('.')[0]}.flac`
-        );
-        console.log("Destination: ",audio_destination_path);
-        ffmpeg()
-            .noVideo()
-            .input(absolute_video_filepath)
-            .audioFrequency(samplerate)
-            .outputOptions("-ac 1")
-            .on("end",()=>{
-                resolve(audio_destination_path);
-            }).on('error',(e)=>{
-            reject(e);
-        }).save(audio_destination_path)
-
-    });
-}
-async function transcribe(absolute_video_filepath) {
+async function transcribeAudio(audio_filepath) {
     // Creates a client
     const client = new speech.SpeechClient();
-
-    // The name of the audio file to transcribe
-    const audio_filepath = await convertVideoToAudio(absolute_video_filepath, 20000)
-
 
     // Reads a local audio file and converts it to base64
     const file = fs.readFileSync(audio_filepath);
@@ -42,8 +16,8 @@ async function transcribe(absolute_video_filepath) {
         content: audioBytes,
     };
     const config = {
-        encoding: 'FLAC',
-        sampleRateHertz: 20000,
+        //encoding: '',
+        sampleRateHertz: process.env.AUDIO_OUTPUT_FREQ,
         languageCode: 'en-US',
     };
     const request = {
@@ -60,7 +34,5 @@ async function transcribe(absolute_video_filepath) {
 
 }
 
-module.exports = {
-    transcribe: transcribe
+module.exports = transcribeAudio;
 
-}

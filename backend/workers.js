@@ -1,12 +1,13 @@
 const workerpool = require('workerpool');
 
-const {transcribe} = require('./gcp.js');
+const transcribeAudio = require('./gcp.js');
 const kairosAnalyzeVideoEmotion = require('./kairos');
 const VokaturiAnalyzeTone = require('./vokaturi');
-
+const convertVideoToAudio = require('./ffmpeg');
 
 workerpool.worker({
     analyzeVideoEmotion : kairosAnalyzeVideoEmotion,
-    transcribe : transcribe,
+    transcribeAudio : transcribeAudio,
+    convertVideoToAudio: convertVideoToAudio,
     analyzeTone: VokaturiAnalyzeTone
 })

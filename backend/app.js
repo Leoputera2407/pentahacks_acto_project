@@ -55,9 +55,20 @@ app.post('/upload/pitch',cors(), function(req, res){
           //TODO : spawn workers here.
           Promise.all([
               (async ()=>{
-                  const data = await pool.exec("transcribe",[uploadpath]);
-                  emitEvent(connectionID, WSevents.GCP_TTS_FINISH)
-                  return(data);
+                     const audiopath =await pool.exec("convertVideoToAudio",[uploadpath]) ;
+                      emitEvent(connectionID, WSevents.FFMPEG_CONVERT_AUDIO_FINISH);
+                      return Promise.all([
+                          (async()=> {
+                              const results = await pool.exec("transcribeAudio", [audiopath]);
+                              emitEvent(connectionID, WSevents.GCP_TTS_FINISH);
+                              return results;
+                          })(),
+                          (async()=> {
+                              const results = await pool.exec("analyzeTone",[audiopath]);
+                              emitEvent(connectionID, WSevents.VOKO_AUDIO_EMOTION_FINISH);
+                              return results;
+                          })()
+                      ])
               })(),
               (async ()=>{
                   const data = await pool.exec("analyzeVideoEmotion",[uploadpath]);
@@ -65,8 +76,10 @@ app.post('/upload/pitch',cors(), function(req, res){
                   return(data);
               })(),
           ]).then((data)=>{
-              console.log(data[0]);
-              console.log(data[1]);
+              const transcription = data[0][0];
+              const audioToneAnalysis = data[0][1];
+              const videoEmotionANalysis = data[1];
+              //TODO
 
           })
       }

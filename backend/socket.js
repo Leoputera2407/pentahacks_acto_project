@@ -27,6 +27,7 @@ function initSocketIoServer(server){
 }
 
 const emitEvt= (connectionID, event, payload)=>{
+    console.log("emitting ",event," ",payload);
     const socketid = map[connectionID];
     if (!socketid){
         console.log(event, " ",connectionID, ": SOCKET ID NOT DEFINED.");
