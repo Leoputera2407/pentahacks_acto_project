@@ -29,18 +29,15 @@ initSocketIoServer(server);
 
 app.options('/upload/pitch',cors());
 app.post('/upload/pitch',cors(), function(req, res){
-  console.log('req.files');
-  console.log(req.files);
   if(req.files.upfile){
     let file = req.files.upfile,
-      name = file.name;
-        let splittedname = file.name.split('.');
-        let extension = "";
-        if (splittedname.length > 1){
-            extension = "." + splittedname [splittedname.length - 1 ];
-        }
-
-      const connectionID = uuid();
+    name = file.name;
+    let splittedname = file.name.split('.');
+    let extension = "";
+    if (splittedname.length > 1){
+        extension = "." + splittedname [splittedname.length - 1 ];
+    }
+  const connectionID = uuid();
     let uploadpath = path.join(FILE_UPLOAD_DIR, connectionID + extension);
     file.mv(uploadpath,function(err){
       if(err){
@@ -52,7 +49,6 @@ app.post('/upload/pitch',cors(), function(req, res){
           socketClientMap.set(connectionID, null);
           console.log("Appjs map : ",map);
           res.status(200).send(connectionID);
-          //TODO : spawn workers here.
           Promise.all([
               (async ()=>{
                      const audiopath =await pool.exec("convertVideoToAudio",[uploadpath]) ;
@@ -61,6 +57,7 @@ app.post('/upload/pitch',cors(), function(req, res){
                           (async()=> {
                               const results = await pool.exec("transcribeAudio", [audiopath]);
                               emitEvent(connectionID, WSevents.GCP_TTS_FINISH);
+                              //TODO: send to NN here
                               return results;
                           })(),
                           (async()=> {
@@ -69,17 +66,32 @@ app.post('/upload/pitch',cors(), function(req, res){
                               return results;
                           })()
                       ])
-              })(),
+              })(), // audio
               (async ()=>{
                   const data = await pool.exec("analyzeVideoEmotion",[uploadpath]);
                   emitEvent(connectionID, WSevents.KAIROS_VIDEO_EMOTION_FINISH)
                   return(data);
-              })(),
+              })(), // kairos (facial emotion)
           ]).then((data)=>{
-              const transcription = data[0][0];
+              const transcription = data[0][0][0];
+              const myerBriggsTimeseries = data[0][0][1];
               const audioToneAnalysis = data[0][1];
-              const videoEmotionANalysis = data[1];
-              //TODO
+              const videoEmotionTimeseries = data[1];
+              Promise.all([
+                  pool.exec("createWordCloud", [transcription]),
+                  pool.exec("calculateConfidenceEnthusiasm", [myerBriggsTimeseries, videoEmotionTimeseries]),
+                  pool.exec("calculateDelivery", [audioToneAnalysis, videoEmotionTimeseries])
+              ]).then((data_2)=>{
+                  const wordCloud = data_2[0];
+                  const confidence = data_2[1][0];
+                  const enthusiasm = data_2[1][1];
+                  const delivery = data_2[2];
+                  //TODO: Aggregate confidence, enthusiasm and delivery.
+
+
+              })
+
+
 
           })
       }
